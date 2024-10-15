@@ -13,6 +13,13 @@ pipeline {
                 }
             }
         }
+        stage('Build'){
+            steps{
+                script{
+                    echo 'Building the application'
+                }
+            }
+        }
         stage('Code Analysis') {
             environment {
                 scannerHome = tool 'Sonar'
