@@ -2,9 +2,15 @@ pipeline {
     agent any
     
     stages {
-        stage('Fetch Code') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/timucinozkan/rpg_game.git'
+                script {
+                    // Check out the main branch from the repository
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        userRemoteConfigs: [[url: 'https://github.com/timucinozkan/rpg_game.git']]
+                        ])
+                }
             }
         }
         stage('Code Analysis') {
@@ -13,11 +19,24 @@ pipeline {
             }
             steps {
                 script {
+                    // sources: path to analyze, projectKey: sonar project name
                     withSonarQubeEnv(credentialsId: 'sonar-rpg_game', installationName: 'Sonar') {
                         sh "${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=jenkinsfile-sonar \
                             -Dsonar.sources=. \
                             -Dsonar.python.version=3"
+                    }
+                }
+            }
+        }
+        stage('Quality Gate'){
+            steps{
+                script{
+                    timeout(time: 3, unit:'MINUTES'){
+                        def qb = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error 'Pipeline aborted: ${qg.status}'
+                        }
                     }
                 }
             }
